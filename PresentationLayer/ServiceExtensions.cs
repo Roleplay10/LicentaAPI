@@ -9,9 +9,18 @@ public static class ServiceExtensions
 {
     public static void AddScopeServices(this IServiceCollection services)
     {
-        services.AddScoped<IUserService, UserService>();
+        //repositories
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IProfileRepository, ProfileRepository>();
+        services.AddScoped<IDocumentRepository, DocumentRepository>();
+        //services
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IProfileService, ProfileService>();
+        services.AddScoped<IDocumentService, DocumentService>();    
+        //builders
         services.AddScoped<IUserBuilder, UserBuilder>();
+        services.AddScoped<IProfileBuilder, ProfileBuilder>();
+        services.AddScoped<IDocumentBuilder, DocumentBuilder>();
     }
     public static void AddSingletonServices(this IServiceCollection services)
     {

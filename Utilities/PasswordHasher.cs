@@ -1,7 +1,5 @@
 ﻿namespace Utilities;
 
-using BCrypt;
-
 public static class PasswordHasher
 {
     public static string HashPassword(string password)

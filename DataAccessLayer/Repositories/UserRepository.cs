@@ -1,7 +1,7 @@
 using DataAccessLayer.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
-using MongoDB.Driver.Linq;
 
 namespace DataAccessLayer.Repositories
 {
@@ -10,7 +10,8 @@ namespace DataAccessLayer.Repositories
         Task<IEnumerable<User>> GetAllUsers();
         Task<User> GetUserByEmail(string email);
         Task<User> GetUserById(string id);
-        Task AddUser(User user);
+        Task<User> LoginUser(string email, string password);
+        Task RegisterUser(User user);
         Task UpdateUser(string id, User user);
         Task DeleteUser(string id);
     }
@@ -18,9 +19,11 @@ namespace DataAccessLayer.Repositories
     public class UserRepository : IUserRepository
     {
         private readonly MongoDbContext _db;
-        public UserRepository(MongoDbContext db)
+        private readonly IProfileRepository _profileRepository;
+        public UserRepository(MongoDbContext db, IProfileRepository profileRepository)
         {
             _db = db;
+            _profileRepository = profileRepository;
         }
 
         public async Task<IEnumerable<User>> GetAllUsers()
@@ -38,10 +41,27 @@ namespace DataAccessLayer.Repositories
             var user = await _db.Users.FirstOrDefaultAsync(user => user.Id == ObjectId.Parse(id));
             return user;
         }
-        public async Task AddUser(User user)
+
+        public async Task<User> LoginUser(string email, string password)
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(user => user.Email == email);
+            if (user == null)
+            {
+                Console.WriteLine("User not found");
+                return null;
+            }
+            return user;
+        }
+        public async Task RegisterUser(User user)
         {
             await _db.Users.AddAsync(user);
             await _db.SaveChangesAsync();
+            var checkUser = await _db.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
+            if (checkUser == null)
+            {
+                return;
+            }
+            await _profileRepository.GenerateEmptyProfile(checkUser.Id);
         }
         public async Task UpdateUser(string id,User user)
         {
@@ -56,7 +76,9 @@ namespace DataAccessLayer.Repositories
         {
             var oid = ObjectId.Parse(id);
             var userToDelete = await _db.Users.FirstOrDefaultAsync(u => u.Id == oid);
+            var profileToDelete = await _db.Profiles.FirstOrDefaultAsync(p => p.UserId == oid);
             _db.Users.Remove(userToDelete);
+            _db.Profiles.Remove(profileToDelete);
             await _db.SaveChangesAsync();
         }   
     }

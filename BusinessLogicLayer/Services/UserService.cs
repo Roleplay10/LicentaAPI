@@ -4,6 +4,7 @@ using BusinessLogicLayer.Interfaces;
 using DataAccessLayer;
 using DataAccessLayer.Models;
 using DataAccessLayer.Repositories;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Utilities;
 
 namespace BusinessLogicLayer.Services;
@@ -32,10 +33,22 @@ public class UserService : IUserService
         var user = await _userRepository.GetUserById(id);
         return user;
     }
-    public async Task AddUser(UserDto user)
+    public async Task<User> Login(string email, string password)
+    {
+        var user = await _userRepository.LoginUser(email, password);
+        if (user != null)
+        {
+            if (PasswordHasher.VerifyPassword(password, user.Password))
+            {
+                return user;
+            }
+        }
+        return null;
+    }
+    public async Task RegisterUser(UserDto user)
     {
         var newUser = _userBuilder.UserBuild(user);
-        await _userRepository.AddUser(newUser);
+        await _userRepository.RegisterUser(newUser);
     }
     public async Task UpdateUser(string id, UserDto user)
     {
